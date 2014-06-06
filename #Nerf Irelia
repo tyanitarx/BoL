@@ -1,165 +1,209 @@
- if myHero.charName ~= "Irelia" then return end
- 
- -- [[  #Nerf Irelia by tyanitarx]] --
- 
- require "VPrediction"
- 
- local aarange, qrange, erange, rrange =
- local qspeed, espeed, rspeed =
- local qdelay, edelay, rdelay =
- local rwidth =
- local VP
- local ts = nil
- local igniteslot = nil
- local bwkslot = nil
- local trinityslot = nil
- local ruinedkingslot = nil
- local QREADY
- local WREADY
- local EREADY
- local RREADY
- local IREADY
- local BREADY
- local TREADY
- local qdistance
- local edistance
- local rdistance
- 
- function OnLoad()
- 
- VP = VPrediction()
- ts = TargetSelector(LOW_HP_TARGET_PRIORITY, 1300)
- Menu()
- SummonerChecks()
- 
- end
- 
-function OnTick()
+ if myHero.charName ~= "Irelia" then return end 
+ -- [[  #Nerf Irelia by tyanitarx]] -- 
+ require "VPrediction" 
+ require "SOW" 
+ local aarange, qrange, erange, rrange = 125, 650, 325, 1200 
+ local qspeed, espeed, rspeed = 2200, math.huge, 779 
+ local qdelay, edelay, rdelay = 0, 0.5, 0.5 
+ local rwidth = 30 
+ local VP 
+ local ts = nil 
+ local igniteslot = nil 
+ local bwkslot = nil 
+ local trinityslot = nil 
+ local ruinedkingslot = nil 
+ local QREADY 
+ local WREADY 
+ local EREADY 
+ local RREADY 
+ local IREADY 
+ local BREADY 
+ local BWKREADY 
+ local TREADY 
+ local qdistance 
+ local edistance 
+ local rdistance 
+ local MinionManager 
+ function OnLoad() 
+ VP = VPrediction() 
+ SOW(VP) 
+ ts = TargetSelector(TARGET_LESS_CAST, 2000, DAMAGE_PHYSICAL, true) 
+ Menu() 
+ SummonerChecks() 
+ MinionManager = minionManager(MINION_ALL, qrange) 
+ end 
+function OnTick() 
 
-ts:update()
-ItemChecks()
-DamageCalculations()
-CooldownChecks()
-DistanceChecks()
-Combo()
-AutoKS()
-Farm()
-AutoStun()
+ts:GetTarget()
+ts:update() 
+SOW:ForceTarget(ts.target) 
+ItemChecks() 
+DamageCalculations() 
+CooldownChecks() 
+DistanceChecks() 
+UseMinions() 
+Combo() 
+AutoKS() 
+Farm() 
+FarmQ() 
+AutoStun() 
 
-end
+end 
 
-function SummonerChecks()
+function SummonerChecks() 
+   if myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") then 
+        ignite = SUMMONER_1 
+    elseif myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") then 
+        ignite = SUMMONER_2 
+    end 
+end 
+function ItemChecks() 
 
-function ItemChecks()
+bwkslot = GetInventorySlotItem(3144) 
+ruinedkingslot = GetInventorySlotItem(3153) 
+trinityslot = GetInventorySlotItem(3078) 
 
-function DamageCalculations()
+end 
 
-local qdmg = getDmg("Q", ts.target, myHero, 3)
-local wdmg = getDmg("W", ts.target, myHero, 3)
-local edmg = getDmg("E", ts.target, myHero, 3)
-local rdmg = getDmg("R", ts.target, myHero, 1)
-local idmg = getDmg("IGNITE", ts.target, myHero, 3)
-local tdmg = getDmg("TRINITY", ts.target, myHero, 3)
-local bdmg = getDmg("RUINEDKING", ts.target, myHero, 3)
-end
+function DamageCalculations() 
 
-function CooldownChecks()
-    
-    if myHero:CanUseSpell(_Q) == true then
-    QREADY = true
-    end
-    
-    if myHero:CanUseSpell(_W) == true then
-    WREADY = true
-    end
-    
-    if myHero:CanUseSpell(_E) == true then
-    EREADY = true
-    end
-    
-    if myHero:CanUseSpell(_R) == true then
-    RREADY = true
-    end
-    
-    if myHero:CanUseSpell(igniteslot) == true then
-    IREADY = true
-    end
-    
-    if myHero:CanUseSpell(ruinedkingslot) == true then
-    BREADY = true
-    end
-    
-    if myHero:CanUseSpell(trinityslot) == READY then
-    TREADY = true
-    end
-    
-end
+local aadmg = getDmg("AD", ts.target, myHero, 3) 
+local qdmg = getDmg("Q", ts.target, myHero, 3) 
+local wdmg = getDmg("W", ts.target, myHero, 3) 
+local edmg = getDmg("E", ts.target, myHero, 3) 
+local rdmg = getDmg("R", ts.target, myHero, 1) 
+local idmg = getDmg("IGNITE", ts.target, myHero, 3) 
+local tdmg = getDmg("TRINITY", ts.target, myHero, 3) 
+local bdmg = getDmg("RUINEDKING", ts.target, myHero, 3) 
+local bwkdmg = getDmg("BWK", ts.target, myHero, 3) 
 
-function DistanceChecks()
+end 
 
-qdistance = GetDistance(ts.target, myHero) < qrange
-edistance = GetDistance(ts.target, myHero) < erange
-rdistance = GetDistance(ts.target, myHero) < rrange
+function CooldownChecks() 
+QREADY = myHero:CanUseSpell(_Q) == READY 
+WREADY = myHero:CanUseSpell(_W) == READY 
+EREADY = myHero:CanUseSpell(_E) == READY 
+RREADY = myHero:CanUseSpell(_R) == READY 
+IREADY = myHero:CanUseSpell(igniteslot) == READY 
+BREADY = myHero:CanUseSpell(ruinedkingslot) == READY 
+TREADY = myHero:CanUseSpell(trinityslot) == READY 
+BWKREADY = myHero:CanUseSpell(bwkslot) == READY 
 
-end
+end 
 
-function Combo()
+function DistanceChecks() 
 
-    if WREADY and QREADY and qdistance then
-    CastSpell(_W)
-    CastSpell(_Q, ts.target)
-    end
-    
-    if QREADY and qdistance then
-    CastSpell(_Q, ts.target)
-    end
-    
-    if WREADY and edistance then
-    CastSpell(_W)
-    end
-    
-    if EREADY and edistance then
-    CastSpell(_E, ts.target)
-    end
-    
-    if BREADY and menu.UseItems then
-    CastSpell(ruinedkingslot, ts.target)
-    end
-    
-    Orbwalk()
-    
-    if RREADY and rdistance then
-    CastR()
-    end
-    
-    if IREADY then 
-    CastSpell(igniteslot)
-    end
-end
+qdistance = GetDistance(ts.target, myHero) < qrange 
+edistance = GetDistance(ts.target, myHero) < erange 
+rdistance = GetDistance(ts.target, myHero) < rrange 
 
-function AutoKS()
-    if QREADY and qdistance and qdmg >= ts.target.health then
-    CastSpell(_Q, ts.target)
-    end
-end
+end 
 
-function CastR()
-    if RREADY then
-    CastPosition, HitChance, Position = VP:GetLineCastPosition(ts.target, rdelay, rwidth, rrange, rspeed, myHero)
-        if HitChance >= 2 then
-        CastSpell(_R, CastPosition.x, CastPosition.y)
-        end
-    end
-end
+function Combo() 
+   if menu.Combo then 
+      if WREADY and QREADY and qdistance then 
+      CastSpell(_W) 
+      CastSpell(_Q, ts.target) 
+      end 
+      if QREADY and qdistance then 
+      CastSpell(_Q, ts.target) 
+      end 
+      if WREADY and edistance then 
+      CastSpell(_W) 
+      end 
+      if EREADY and edistance then 
+      CastSpell(_E, ts.target) 
+      end 
+      if BREADY and menu.UseItems then 
+      CastSpell(ruinedkingslot, ts.target) 
+      end 
+      if BWKREADY and menu.UseItems then 
+      CastSpell(bwkslot, ts.target) 
+      end 
+      if RREADY and rdistance then 
+      CastR() 
+      end 
+      if IREADY and menu.UseSummoners then 
+      CastSpell(igniteslot) 
+      end 
+   end 
+end 
 
-function Menu()
-menu = scriptConfig("#Nerf Irelia", "Irelia")
-menu:addParam("Combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
-menu:addParam("AutoKS", "AutoKS", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X"))
-menu:addParam("UseItems", "Use Items", SCRIPT_PARAM_ONOFF, false)
-menu:addParam("UseSummoners", "Use Summoners", SCRIPT_PARAM_ONOFF, false)
-menu:addParam("Farm", "Farm", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("C"))
-menu:addParam("FarmQ", "Farm with Q", SCRIPT_PARAM_ONOFF, false)
-menu:addParam("AutoStun", "Auto Stun", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("V"))
-menu:addParam("UseMinions", "Use Minions to Catch Up", SCRIPT_PARAM_ONOFF, false)
-end
+function AutoKS() 
+   if menu.AutoKS then 
+      if QREADY and qdistance and qdmg >= ts.target.health then 
+      CastSpell(_Q, ts.target) 
+      end 
+   end 
+end 
+
+function CastR() 
+    if RREADY then 
+    CastPosition, HitChance, Position = VP:GetLineCastPosition(ts.target, rdelay, rwidth, rrange, rspeed, myHero) 
+        if HitChance >= 2 then 
+        CastSpell(_R, CastPosition.x, CastPosition.y) 
+        end 
+    end 
+end 
+
+function AutoStun() 
+   if EREADY and edistance and myHero.health / myHero.maxHealth < ts.target.health / ts.target.maxHealth then 
+   CastSpell(_E, ts.target) 
+   end 
+end 
+
+function Farm() 
+   if menu.Farm and GetDistance(ts.target, myHero) < 300 then 
+      for i, minion in pairs(MinionManager.objects) do 
+         if minion ~= nil and minion.valid and minion.team ~= myHero.team and not minion.dead and minion.visible and qdmg > minion.health then 
+            myHero:Attack(minion) 
+         end 
+      end 
+   end 
+end 
+
+function FarmQ() 
+   if menu.FarmQ and QREADY and qdistance then 
+      for i, minion in pairs(MinionManager.objects) do 
+         if minion ~= nil and minion.valid and minion.team ~= myHero.team and not minion.dead and minion.visible and qdmg > minion.health then 
+            CastSpell(_Q, minion) 
+         end 
+      end 
+   end 
+end 
+
+function UseMinions() 
+   if menu.UseMinions and QREADY and qdistance then 
+      if menu.Combo then 
+         for i, minion in pairs(MinionManager.objects) do 
+            if minion ~= nil and minion.valid and minion.team ~= myHero.team and not minion.dead and minion.visible and GetDistance(ts.target, minion) > GetDistance(ts.target, myHero) and qdmg > minion.health then 
+               CastSpell(_Q, minion) 
+            end 
+         end 
+      end 
+      if menu.AutoKS and qdmg > ts.target.health then 
+         for i, minion in pairs(MinionManager.objects) do 
+            if minion ~= nil and minion.valid and minion.team ~= myHero.team and not minion.dead and minion.visible and GetDistance(ts.target, minion) > GetDistance(ts.target, myHero) and aadmg > minion.health then 
+               CastSpell(_Q, minion) 
+            end 
+         end 
+      end 
+   end 
+end 
+
+function Menu() 
+menu = scriptConfig("#Nerf Irelia", "Irelia") 
+menu:addParam("Combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32) 
+menu:addParam("AutoKS", "AutoKS", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X")) 
+menu:addParam("UseItems", "Use Items", SCRIPT_PARAM_ONOFF, false) 
+menu:addParam("UseSummoners", "Use Summoners", SCRIPT_PARAM_ONOFF, false) 
+menu:addParam("Farm", "Farm", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("C")) 
+menu:addParam("FarmQ", "Farm with Q", SCRIPT_PARAM_ONOFF, false) 
+menu:addParam("AutoStun", "Auto Stun", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("V")) 
+menu:addParam("UseMinions", "Use Minions to Catch Up", SCRIPT_PARAM_ONOFF, false) 
+orb = scriptConfig("Irelia Orbwalking", "Orbwalk", 
+orb:addParam("Orbwalking", "Orbwalker", SCRIPT_PARAMONOFF, false) 
+SOW:LoadToMenu(orb.Orbwalking) 
+ts.name = "Irelia" 
+Menu:addTS(ts) 
+end 
