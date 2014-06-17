@@ -31,7 +31,7 @@ PrintChat(">>>#Nerf Irelia by tyanitarx Loaded!<<<<")
 VP = VPrediction()
 SummonerChecks()
 
- end
+end
  
 function OnTick()
 
