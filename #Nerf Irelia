@@ -1,67 +1,10 @@
 if myHero.charName ~= "Irelia" then return end
  -- [[  #Nerf Irelia by tyanitarx]] --
  
-  
-local version = "1.11"
-
-_G.UseUpdater = true
-
-local REQUIRED_LIBS = {
-	["SOW"] = "https://raw.githubusercontent.com/Hellsing/BoL/master/common/SOW.lua",
-	["VPrediction"] = "https://raw.githubusercontent.com/Hellsing/BoL/master/common/VPrediction.lua"
-}
-
-local DOWNLOADING_LIBS, DOWNLOAD_COUNT = false, 0
-
-function AfterDownload()
-	DOWNLOAD_COUNT = DOWNLOAD_COUNT - 1
-	if DOWNLOAD_COUNT == 0 then
-		DOWNLOADING_LIBS = false
-		print("<b><font color=\"#FF0000\">Ahri - the Nine-Tailed Fox:</font></b> <font color=\"#FFFFFF\">Required libraries downloaded successfully, please reload (double F9).</font>")
-	end
-end
-
-for DOWNLOAD_LIB_NAME, DOWNLOAD_LIB_URL in pairs(REQUIRED_LIBS) do
-	if FileExist(LIB_PATH .. DOWNLOAD_LIB_NAME .. ".lua") then
-		require(DOWNLOAD_LIB_NAME)
-	else
-		DOWNLOADING_LIBS = true
-		DOWNLOAD_COUNT = DOWNLOAD_COUNT + 1
-		DownloadFile(DOWNLOAD_LIB_URL, LIB_PATH .. DOWNLOAD_LIB_NAME..".lua", AfterDownload)
-	end
-end
-
-if DOWNLOADING_LIBS then return end
-
-local UPDATE_NAME = "#Nerf Irelia"
-local UPDATE_HOST = "raw.githubusercontent.com"
-local UPDATE_PATH = "/tyanitarx/BoL/master/%23Nerf%20Irelia.lua"
-local UPDATE_FILE_PATH = SCRIPT_PATH..UPDATE_NAME..".lua"
-local UPDATE_URL = "http://"..UPDATE_HOST..UPDATE_PATH
-
-function AutoupdaterMsg(msg) print("<b><font color=\"#FF0000\">"..UPDATE_NAME..":</font></b> <font color=\"#FFFFFF\">"..msg..".</font>") end
-if _G.UseUpdater then
-	local ServerData = GetWebResult(UPDATE_HOST, UPDATE_PATH)
-	if ServerData then
-		local ServerVersion = string.match(ServerData, "local version = \"%d+.%d+\"")
-		ServerVersion = string.match(ServerVersion and ServerVersion or "", "%d+.%d+")
-		if ServerVersion then
-			ServerVersion = tonumber(ServerVersion)
-			if tonumber(version) < ServerVersion then
-				AutoupdaterMsg("New version available"..ServerVersion)
-				AutoupdaterMsg("Updating, please don't press F9")
-				DownloadFile(UPDATE_URL, UPDATE_FILE_PATH, function () AutoupdaterMsg("Successfully updated. ("..version.." => "..ServerVersion.."), press F9 twice to load the updated version.") end)	 
-			else
-				AutoupdaterMsg("You have got the latest version ("..ServerVersion..")")
-			end
-		end
-	else
-		AutoupdaterMsg("Error downloading version info")
-	end
-end
+ require "VPrediction"
 
 
- 
+
  local aarange, qrange, erange, rrange = 125, 650, 325, 1200
  local qspeed, espeed, rspeed = 2200, math.huge, 779
  local qdelay, edelay, rdelay = 0, 0.5, 0.5
@@ -85,7 +28,7 @@ end
 
 function OnLoad()
  
-ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 1300)
+ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 1250)
 Menu()
 PrintChat(">>>#Nerf Irelia by tyanitarx Loaded!<<<<")
 VP = VPrediction()
@@ -231,7 +174,7 @@ function AutoStun()
 end
 
 function MinionDistance(player, pd, md)
-	for i, minion in pairs(minionManager(MINION_ENEMY, 1300, myHero, MINIONS_SORT_HEALTH_ASC).objects) do 
+	for i, minion in pairs(minionManager(MINION_ENEMY, 1300, myHero).objects) do 
 		if minion ~= nil and minion.valid and minion.health < (getDmg("Q", minion, myHero) + getDmg("AD", minion, myHero)) then
 		player = myHero
 		pd = player.y - player.x
@@ -253,10 +196,11 @@ end
 function UseMinions()
 	for i, minion in pairs(minionManager(MINION_ENEMY, 1300, myHero).objects) do 
 		if menu.UseMinions and minion ~= nil and minion.valid and minion.health < (getDmg("Q", minion, myHero) + getDmg("AD", minion, myHero)) then
-			if myHero:CanUseSpell(_Q) == READY and ts.target ~= nil and menu.Combo and TargetDistance(player, pd, td) > MinionDistance(player, pd, td) and myHero.mana > 70 then 
+			if myHero:CanUseSpell(_Q) == READY and ts.target ~= nil and menu.Combo and TargetDistance(player, pd, td) > MinionDistance(player, pd, md) and myHero.mana > 70 then 
 			CastSpell(_Q, minion)
-			elseif myHero:CanUseSpell(_Q) == READY and ts.target ~= nil and menu.AutoKS and GetDistance(ts.target, myHero) > MinionDistance() and myHero.mana > 70 and (getDmg("Q", ts.target, myHero) + getDmg("AD", ts.target, myHero)) > ts.target.health then
+			elseif myHero:CanUseSpell(_Q) == READY and ts.target ~= nil and menu.AutoKS and TargetDistance(player, pd, td) > MinionDistance(player, pd, md) and myHero.mana > 70 and (getDmg("Q", ts.target, myHero) + getDmg("AD", ts.target, myHero)) > ts.target.health then
 			CastSpell(_Q, minion)
+			CastSpell(_Q, ts.target)
 			end
 		end
 	end
