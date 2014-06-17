@@ -13,7 +13,6 @@ if myHero.charName ~= "Irelia" then return end
  local BWCslot = nil
  local trinityslot = nil
  local ruinedkingslot = nil
- local MinionManager = nil
 
 function OnProcessSpell(object, spell)
 	if object == myHero then
@@ -26,13 +25,11 @@ end
 
 function OnLoad()
  
-ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 1000)
+ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 1300)
 Menu()
 PrintChat(">>>#Nerf Irelia by tyanitarx Loaded!<<<<")
 VP = VPrediction()
 SummonerChecks()
-MinionManager = minionManager(MINION_ENEMY, 650, myHero, MINIONS_SORT_HEALTH_ASC)
-
 
  end
  
@@ -43,10 +40,9 @@ ItemChecks()
 Combo()
 AutoKS()
 AutoStun()
-MinionManager:update() 
+minionManager(MINION_ENEMY, 1300, myHero, MINIONS_SORT_HEALTH_ASC):update() 
 FarmQ()
-Ignite()
-
+UseMinions()
 
 end
 
@@ -93,6 +89,8 @@ function Combo()
 			CastSpell(_R, CastPosition.x, CastPosition.y)
 			end
 			
+			ts:update()
+			
 			if ultcount == 1 then
 				CastPosition2, HitChance, Position = VP:GetLineCastPosition(ts.target, rdelay, rwidth, rrange, rspeed, myHero)
 				if HitChance >= 2 then
@@ -100,12 +98,15 @@ function Combo()
 				end
 			end
 			
+			ts:update()
+			
 			if ultcount == 2 then
 				CastPosition3, HitChance, Position = VP:GetLineCastPosition(ts.target, rdelay, rwidth, rrange, rspeed, myHero)
 				if HitChance >= 2 then
 				CastSpell(_R, CastPosition3.x, CastPosition3.y)
 				end
 			end 
+			ts:update()
 			
 			if ultcount == 3 then
 				CastPosition4, HitChance, Position = VP:GetLineCastPosition(ts.target, rdelay, rwidth, rrange, rspeed, myHero)
@@ -117,10 +118,10 @@ function Combo()
 	
 		
 		if menu.UseItems then
-			if BWCslot ~= nil and myHero:CanUseSpell(BWCslot) then
+			if BWCslot ~= nil and myHero:CanUseSpell(BWCslot) == READY then
 			CastSpell(BWCslot, ts.target)	
 			end
-			if ruinedkingslot ~= nil and myHero:CanUseSpell(ruinedkingslot) then
+			if ruinedkingslot ~= nil and myHero:CanUseSpell(ruinedkingslot) == READY then
 			CastSpell(ruinedkingslot, ts.target)	
 			end
 			
@@ -131,7 +132,7 @@ end
 
 function FarmQ() 
 	if myHero:CanUseSpell(_Q) == READY and menu.FarmQ then
-		for i, minion in pairs(MinionManager.objects) do 
+		for i, minion in pairs(minionManager(MINION_ENEMY, 1300, myHero, MINIONS_SORT_HEALTH_ASC).objects) do 
 			if minion ~= nil and minion.valid and minion.health < (getDmg("Q", minion, myHero) + getDmg("AD", minion, myHero)) then
 				CastSpell(_Q, minion)
 			end
@@ -168,7 +169,40 @@ function AutoStun()
 	CastSpell(_E, ts.target)
 	end
 end
-	
+
+function MinionDistance(player, pd, md)
+	for i, minion in pairs(minionManager(MINION_ENEMY, 1300, myHero, MINIONS_SORT_HEALTH_ASC).objects) do 
+		if minion ~= nil and minion.valid and minion.health < (getDmg("Q", minion, myHero) + getDmg("AD", minion, myHero)) then
+		player = myHero
+		pd = player.y - player.x
+		md = minion.y - minion.x
+		return math.sqrt( pd * pd + md * md )
+		end
+	end
+end
+
+function TargetDistance(player, pd, td)
+	if ts.target ~= nil then
+		player = myHero
+		pd = player.y - player.x
+		td = ts.target.y - ts.target.x
+		return math.sqrt( pd * pd + td * td )
+	end
+end
+
+function UseMinions()
+	for i, minion in pairs(minionManager(MINION_ENEMY, 1300, myHero).objects) do 
+		if menu.UseMinions and minion ~= nil and minion.valid and minion.health < (getDmg("Q", minion, myHero) + getDmg("AD", minion, myHero)) then
+			if myHero:CanUseSpell(_Q) == READY and ts.target ~= nil and menu.Combo and TargetDistance(player, pd, td) > MinionDistance(player, pd, td) and myHero.mana > 70 then 
+			CastSpell(_Q, minion)
+			elseif myHero:CanUseSpell(_Q) == READY and ts.target ~= nil and menu.AutoKS and GetDistance(ts.target, myHero) > MinionDistance() and myHero.mana > 70 and (getDmg("Q", ts.target, myHero) + getDmg("AD", ts.target, myHero)) > ts.target.health then
+			CastSpell(_Q, minion)
+			end
+		end
+	end
+end
+
+
 function Menu()
 menu = scriptConfig("#Nerf Irelia", "Irelia")
 menu:addParam("Combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
@@ -178,6 +212,9 @@ menu:addParam("UseSummoners", "Use Summoners", SCRIPT_PARAM_ONOFF, false)
 menu:addParam("FarmQ", "Farm with Q", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("C"))
 menu:addParam("AutoStun", "Auto Stun", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("M"))
 menu:addParam("UseR", "Use Ult in Combo", SCRIPT_PARAM_ONOFF, false)
+menu:addParam("UseMinions", "Use Minions to Catch Up", SCRIPT_PARAM_ONOFF, false)
+menu:addSubMenu("Orbwalker", "Irelia Orbwalking")
+
 ts.name = "Irelia"
 menu:addTS(ts)
 end
